@@ -3,16 +3,18 @@
 If you experience crashes or issues in Electron that you believe are not caused
 by your JavaScript application, but instead by Electron itself, debugging can
 be a little bit tricky, especially for developers not used to native/C++
-debugging. However, using Visual Studio, GitHub's hosted Electron Symbol Server,
-and the Electron source code, it is fairly easy to enable step-through debugging
+debugging. However, using Visual Studio, Electron's hosted Symbol Server,
+and the Electron source code, you can enable step-through debugging
 with breakpoints inside Electron's source code.
+
+**See also**: There's a wealth of information on debugging Chromium, much of which also applies to Electron, on the Chromium developers site: [Debugging Chromium on Windows](https://www.chromium.org/developers/how-tos/debugging-on-windows).
 
 ## Requirements
 
 * **A debug build of Electron**: The easiest way is usually building it
   yourself, using the tools and prerequisites listed in the
   [build instructions for Windows](build-instructions-windows.md). While you can
-  easily attach to and debug Electron as you can download it directly, you will
+  attach to and debug Electron as you can download it directly, you will
   find that it is heavily optimized, making debugging substantially more
   difficult: The debugger will not be able to show you the content of all
   variables and the execution path can seem strange because of inlining,
@@ -20,7 +22,7 @@ with breakpoints inside Electron's source code.
 
 * **Visual Studio with C++ Tools**: The free community editions of Visual
   Studio 2013 and Visual Studio 2015 both work. Once installed,
-  [configure Visual Studio to use GitHub's Electron Symbol server](setting-up-symbol-server.md).
+  [configure Visual Studio to use Electron's Symbol server](setting-up-symbol-server.md).
   It will enable Visual Studio to gain a better understanding of what happens
   inside Electron, making it easier to present variables in a human-readable
   format.
@@ -34,7 +36,7 @@ To start a debugging session, open up PowerShell/CMD and execute your debug
 build of Electron, using the application to open as a parameter.
 
 ```powershell
-$ ./out/D/electron.exe ~/my-electron-app/
+$ ./out/Testing/electron.exe ~/my-electron-app/
 ```
 
 ### Setting Breakpoints
@@ -46,9 +48,7 @@ still set breakpoints - Visual Studio will automatically figure out that the
 source code matches the code running in the attached process and break
 accordingly.
 
-Relevant code files can be found in `./atom/` as well as in Brightray, found in
-`./vendor/brightray/browser` and `./vendor/brightray/common`. If you're hardcore,
-you can also debug Chromium directly, which is obviously found in `chromium_src`.
+Relevant code files can be found in `./shell/`.
 
 ### Attaching
 
@@ -69,8 +69,7 @@ way of figuring out which is which.
 ### Which Process Should I Attach to?
 
 Code executed within the main process (that is, code found in or eventually run
-by your main JavaScript file) as well as code called using the remote
-(`require('electron').remote`) will run inside the main process, while other
+by your main JavaScript file) will run inside the main process, while other
 code will execute inside its respective renderer process.
 
 You can be attached to multiple programs when you are debugging, but only one

@@ -1,79 +1,104 @@
-[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
+[![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
 
-[![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
-[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kvxe4byi7jcxbe26/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
-[![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
-[![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
+[![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/master.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/4lggi9dpjc1qob7k/branch/master?svg=true)](https://ci.appveyor.com/project/electron-bot/electron-ljo26/branch/master)
+[![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
+[![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.com/invite/electron)
 
-:zap: *Formerly known as Atom Shell* :zap:
+:memo: Available Translations: 🇨🇳 🇹🇼 🇧🇷 🇪🇸 🇰🇷 🇯🇵 🇷🇺 🇫🇷 🇹🇭 🇳🇱 🇹🇷 🇮🇩 🇺🇦 🇨🇿 🇮🇹 🇵🇱.
+View these docs in other languages at [electron/i18n](https://github.com/electron/i18n/tree/master/content/).
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
-[Chromium](http://www.chromium.org) and is used in the [Atom
-editor](https://github.com/atom/atom).
+[Chromium](https://www.chromium.org) and is used by the [Atom
+editor](https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
 
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
-This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
+This project adheres to the Contributor Covenant
+[code of conduct](https://github.com/electron/electron/tree/master/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable
-behavior to atom@github.com.
+behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 
-## Downloads
+## Installation
 
-Prebuilt binaries and debug symbols of Electron for Linux, Windows and OS X can
-be found on the [releases](https://github.com/electron/electron/releases) page.
-
-You can also use [`npm`](https://docs.npmjs.com/) to install prebuilt electron
-binaries:
+To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/).
+The preferred method is to install Electron as a development dependency in your
+app:
 
 ```sh
-# Install the `electron` command globally in your $PATH
-npm install electron-prebuilt -g
+npm install electron --save-dev
+```
 
-# Install as a development dependency
-npm install electron-prebuilt --save-dev
+For more installation options and troubleshooting tips, see
+[installation](docs/tutorial/installation.md). For info on how to manage Electron versions in your apps, see
+[Electron versioning](docs/tutorial/electron-versioning.md).
+
+## Quick start & Electron Fiddle
+
+Use [`Electron Fiddle`](https://github.com/electron/fiddle)
+to build, run, and package small Electron experiments, to see code examples for all of Electron's APIs, and
+to try out different versions of Electron. It's designed to make the start of your journey with
+Electron easier.
+
+Alternatively, clone and run the
+[electron/electron-quick-start](https://github.com/electron/electron-quick-start)
+repository to see a minimal Electron app in action:
+
+```sh
+git clone https://github.com/electron/electron-quick-start
+cd electron-quick-start
+npm install
+npm start
+```
+
+## Resources for learning Electron
+
+- [electronjs.org/docs](https://electronjs.org/docs) - All of Electron's documentation
+- [electron/fiddle](https://github.com/electron/fiddle) - A tool to build, run, and package small Electron experiments
+- [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - A very basic starter Electron app
+- [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - Sample starter apps created by the community
+- [electron/simple-samples](https://github.com/electron/simple-samples) - Small applications with ideas for taking them further
+- [electron/electron-api-demos](https://github.com/electron/electron-api-demos) - An Electron app that teaches you how to use Electron
+- [hokein/electron-sample-apps](https://github.com/hokein/electron-sample-apps) - Small demo apps for the various Electron APIs
+
+## Programmatic usage
+
+Most people use Electron from the command line, but if you require `electron` inside
+your **Node app** (not your Electron app) it will return the file path to the
+binary. Use this to spawn Electron from Node scripts:
+
+```javascript
+const electron = require('electron')
+const proc = require('child_process')
+
+// will print something similar to /Users/maf/.../Electron
+console.log(electron)
+
+// spawn Electron
+const child = proc.spawn(electron)
 ```
 
 ### Mirrors
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
-## Documentation
-
-Guides and the API reference are located in the
-[docs](https://github.com/electron/electron/tree/master/docs) directory. It also
-contains documents describing how to build and contribute to Electron.
-
 ## Documentation Translations
 
-- [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR)
-- [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR)
-- [Japanese](https://github.com/electron/electron/tree/master/docs-translations/jp)
-- [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es)
-- [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
-- [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW)
-- [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
-- [Ukrainian](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
-- [Russian](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
-- [French](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
+Find documentation translations in [electron/i18n](https://github.com/electron/i18n).
 
-## Quick Start
+## Contributing
 
-Clone and run the [`electron/electron-quick-start`](https://github.com/electron/electron-quick-start)
-repository to see a minimal Electron app in action.
+If you are interested in reporting/fixing issues and contributing directly to the code base, please see [CONTRIBUTING.md](CONTRIBUTING.md) for more information on what we're looking for and how to get started.
 
 ## Community
 
-You can ask questions and interact with the community in the following
-locations:
-- [`electron`](http://discuss.atom.io/c/electron) category on the Atom
-forums
-- `#atom-shell` channel on Freenode
-- [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
-- [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
-- [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
-- [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(Japanese)*
+Info on reporting bugs, getting help, finding third-party tools and sample apps,
+and more can be found in the [support document](docs/tutorial/support.md#finding-support).
 
-Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
-for a community maintained list of useful example apps, tools and resources.
+## License
+
+[MIT](https://github.com/electron/electron/blob/master/LICENSE)
+
+When using the Electron or other GitHub logos, be sure to follow the [GitHub logo guidelines](https://github.com/logos).

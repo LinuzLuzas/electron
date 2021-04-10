@@ -9,12 +9,13 @@
 #include "base/bind.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/post_task.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "crypto/nss_util.h"
 #include "crypto/nss_util_internal.h"
-#include "net/base/crypto_module.h"
 #include "net/base/net_errors.h"
 #include "net/cert/nss_cert_database.h"
 #include "net/cert/x509_certificate.h"
@@ -27,7 +28,7 @@ net::NSSCertDatabase* g_nss_cert_database = nullptr;
 
 net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
     content::ResourceContext* context,
-    const base::Callback<void(net::NSSCertDatabase*)>& callback) {
+    base::OnceCallback<void(net::NSSCertDatabase*)> callback) {
   // This initialization is not thread safe. This CHECK ensures that this code
   // is only run on a single thread.
   CHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
@@ -35,11 +36,10 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
     // Linux has only a single persistent slot compared to ChromeOS's separate
     // public and private slot.
     // Redirect any slot usage to this persistent slot on Linux.
+    crypto::EnsureNSSInit();
     g_nss_cert_database = new net::NSSCertDatabase(
-        crypto::ScopedPK11Slot(
-            crypto::GetPersistentNSSKeySlot()) /* public slot */,
-        crypto::ScopedPK11Slot(
-            crypto::GetPersistentNSSKeySlot()) /* private slot */);
+        crypto::ScopedPK11Slot(PK11_GetInternalKeySlot()) /* public slot */,
+        crypto::ScopedPK11Slot(PK11_GetInternalKeySlot()) /* private slot */);
   }
   return g_nss_cert_database;
 }
@@ -69,36 +69,32 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
 //               callback
 
 // static
-void CertificateManagerModel::Create(
-    content::BrowserContext* browser_context,
-    const CreationCallback& callback) {
+void CertificateManagerModel::Create(content::BrowserContext* browser_context,
+                                     CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  BrowserThread::PostTask(
-      BrowserThread::IO,
-      FROM_HERE,
-      base::Bind(&CertificateManagerModel::GetCertDBOnIOThread,
-                 browser_context->GetResourceContext(),
-                 callback));
+  base::PostTask(FROM_HERE, {BrowserThread::IO},
+                 base::BindOnce(&CertificateManagerModel::GetCertDBOnIOThread,
+                                browser_context->GetResourceContext(),
+                                std::move(callback)));
 }
 
 CertificateManagerModel::CertificateManagerModel(
     net::NSSCertDatabase* nss_cert_database,
     bool is_user_db_available)
-    : cert_db_(nss_cert_database),
-      is_user_db_available_(is_user_db_available) {
+    : cert_db_(nss_cert_database), is_user_db_available_(is_user_db_available) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 }
 
-CertificateManagerModel::~CertificateManagerModel() {
-}
+CertificateManagerModel::~CertificateManagerModel() = default;
 
-int CertificateManagerModel::ImportFromPKCS12(net::CryptoModule* module,
-                                              const std::string& data,
-                                              const base::string16& password,
-                                              bool is_extractable,
-                                              net::CertificateList* imported_certs) {
-  return cert_db_->ImportFromPKCS12(module, data, password,
-                                    is_extractable, imported_certs);
+int CertificateManagerModel::ImportFromPKCS12(
+    PK11SlotInfo* slot_info,
+    const std::string& data,
+    const std::u16string& password,
+    bool is_extractable,
+    net::ScopedCERTCertificateList* imported_certs) {
+  return cert_db_->ImportFromPKCS12(slot_info, data, password, is_extractable,
+                                    imported_certs);
 }
 
 int CertificateManagerModel::ImportUserCert(const std::string& data) {
@@ -106,28 +102,27 @@ int CertificateManagerModel::ImportUserCert(const std::string& data) {
 }
 
 bool CertificateManagerModel::ImportCACerts(
-    const net::CertificateList& certificates,
+    const net::ScopedCERTCertificateList& certificates,
     net::NSSCertDatabase::TrustBits trust_bits,
     net::NSSCertDatabase::ImportCertFailureList* not_imported) {
   return cert_db_->ImportCACerts(certificates, trust_bits, not_imported);
 }
 
 bool CertificateManagerModel::ImportServerCert(
-    const net::CertificateList& certificates,
+    const net::ScopedCERTCertificateList& certificates,
     net::NSSCertDatabase::TrustBits trust_bits,
     net::NSSCertDatabase::ImportCertFailureList* not_imported) {
-  return cert_db_->ImportServerCert(certificates, trust_bits,
-                                    not_imported);
+  return cert_db_->ImportServerCert(certificates, trust_bits, not_imported);
 }
 
 bool CertificateManagerModel::SetCertTrust(
-    const net::X509Certificate* cert,
+    CERTCertificate* cert,
     net::CertType type,
     net::NSSCertDatabase::TrustBits trust_bits) {
   return cert_db_->SetCertTrust(cert, type, trust_bits);
 }
 
-bool CertificateManagerModel::Delete(net::X509Certificate* cert) {
+bool CertificateManagerModel::Delete(CERTCertificate* cert) {
   return cert_db_->DeleteCertAndKey(cert);
 }
 
@@ -135,39 +130,42 @@ bool CertificateManagerModel::Delete(net::X509Certificate* cert) {
 void CertificateManagerModel::DidGetCertDBOnUIThread(
     net::NSSCertDatabase* cert_db,
     bool is_user_db_available,
-    const CreationCallback& callback) {
+    CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  scoped_ptr<CertificateManagerModel> model(new CertificateManagerModel(
-      cert_db, is_user_db_available));
-  callback.Run(std::move(model));
+  std::unique_ptr<CertificateManagerModel> model(
+      new CertificateManagerModel(cert_db, is_user_db_available));
+  std::move(callback).Run(std::move(model));
 }
 
 // static
 void CertificateManagerModel::DidGetCertDBOnIOThread(
-    const CreationCallback& callback,
+    CreationCallback callback,
     net::NSSCertDatabase* cert_db) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   bool is_user_db_available = !!cert_db->GetPublicSlot();
-  BrowserThread::PostTask(
-      BrowserThread::UI,
-      FROM_HERE,
-      base::Bind(&CertificateManagerModel::DidGetCertDBOnUIThread,
-                 cert_db,
-                 is_user_db_available,
-                 callback));
+  base::PostTask(
+      FROM_HERE, {BrowserThread::UI},
+      base::BindOnce(&CertificateManagerModel::DidGetCertDBOnUIThread, cert_db,
+                     is_user_db_available, std::move(callback)));
 }
 
 // static
 void CertificateManagerModel::GetCertDBOnIOThread(
     content::ResourceContext* context,
-    const CreationCallback& callback) {
+    CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  net::NSSCertDatabase* cert_db = GetNSSCertDatabaseForResourceContext(
-      context,
-      base::Bind(&CertificateManagerModel::DidGetCertDBOnIOThread,
-                 callback));
+
+  auto did_get_cert_db_callback = base::AdaptCallbackForRepeating(
+      base::BindOnce(&CertificateManagerModel::DidGetCertDBOnIOThread,
+                     std::move(callback)));
+
+  net::NSSCertDatabase* cert_db =
+      GetNSSCertDatabaseForResourceContext(context, did_get_cert_db_callback);
+
+  // If the NSS database was already available, |cert_db| is non-null and
+  // |did_get_cert_db_callback| has not been called. Call it explicitly.
   if (cert_db)
-    DidGetCertDBOnIOThread(callback, cert_db);
+    did_get_cert_db_callback.Run(cert_db);
 }

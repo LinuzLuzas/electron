@@ -6,13 +6,12 @@
 #define CHROME_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include "base/callback.h"
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
-#include "base/memory/scoped_ptr.h"
-#include "base/strings/string16.h"
 #include "net/cert/nss_cert_database.h"
 
 namespace content {
@@ -24,14 +23,14 @@ class ResourceContext;
 // manager dialog, and processes changes from the view.
 class CertificateManagerModel {
  public:
-  typedef base::Callback<void(scoped_ptr<CertificateManagerModel>)>
-      CreationCallback;
+  using CreationCallback =
+      base::OnceCallback<void(std::unique_ptr<CertificateManagerModel>)>;
 
   // Creates a CertificateManagerModel. The model will be passed to the callback
   // when it is ready. The caller must ensure the model does not outlive the
   // |browser_context|.
   static void Create(content::BrowserContext* browser_context,
-                     const CreationCallback& callback);
+                     CreationCallback callback);
 
   ~CertificateManagerModel();
 
@@ -44,11 +43,11 @@ class CertificateManagerModel {
   // |data|, using the given |password|. If |is_extractable| is false,
   // mark the private key as unextractable from the module.
   // Returns a net error code on failure.
-  int ImportFromPKCS12(net::CryptoModule* module,
+  int ImportFromPKCS12(PK11SlotInfo* slot_info,
                        const std::string& data,
-                       const base::string16& password,
+                       const std::u16string& password,
                        bool is_extractable,
-                       net::CertificateList* imported_certs);
+                       net::ScopedCERTCertificateList* imported_certs);
 
   // Import user certificate from DER encoded |data|.
   // Returns a net error code on failure.
@@ -62,7 +61,7 @@ class CertificateManagerModel {
   // Returns false if there is an internal error, otherwise true is returned and
   // |not_imported| should be checked for any certificates that were not
   // imported.
-  bool ImportCACerts(const net::CertificateList& certificates,
+  bool ImportCACerts(const net::ScopedCERTCertificateList& certificates,
                      net::NSSCertDatabase::TrustBits trust_bits,
                      net::NSSCertDatabase::ImportCertFailureList* not_imported);
 
@@ -77,20 +76,20 @@ class CertificateManagerModel {
   // |not_imported| should be checked for any certificates that were not
   // imported.
   bool ImportServerCert(
-      const net::CertificateList& certificates,
+      const net::ScopedCERTCertificateList& certificates,
       net::NSSCertDatabase::TrustBits trust_bits,
       net::NSSCertDatabase::ImportCertFailureList* not_imported);
 
   // Set trust values for certificate.
   // |trust_bits| should be a bit field of TRUST* values from NSSCertDatabase.
   // Returns true on success or false on failure.
-  bool SetCertTrust(const net::X509Certificate* cert,
+  bool SetCertTrust(CERTCertificate* cert,
                     net::CertType type,
                     net::NSSCertDatabase::TrustBits trust_bits);
 
   // Delete the cert.  Returns true on success.  |cert| is still valid when this
   // function returns.
-  bool Delete(net::X509Certificate* cert);
+  bool Delete(CERTCertificate* cert);
 
  private:
   CertificateManagerModel(net::NSSCertDatabase* nss_cert_database,
@@ -98,15 +97,13 @@ class CertificateManagerModel {
 
   // Methods used during initialization, see the comment at the top of the .cc
   // file for details.
-  static void DidGetCertDBOnUIThread(
-      net::NSSCertDatabase* cert_db,
-      bool is_user_db_available,
-      const CreationCallback& callback);
-  static void DidGetCertDBOnIOThread(
-      const CreationCallback& callback,
-      net::NSSCertDatabase* cert_db);
+  static void DidGetCertDBOnUIThread(net::NSSCertDatabase* cert_db,
+                                     bool is_user_db_available,
+                                     CreationCallback callback);
+  static void DidGetCertDBOnIOThread(CreationCallback callback,
+                                     net::NSSCertDatabase* cert_db);
   static void GetCertDBOnIOThread(content::ResourceContext* context,
-                                  const CreationCallback& callback);
+                                  CreationCallback callback);
 
   net::NSSCertDatabase* cert_db_;
   // Whether the certificate database has a public slot associated with the

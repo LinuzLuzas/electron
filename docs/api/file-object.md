@@ -7,7 +7,7 @@ let users work on native files directly with the HTML5 file API. Electron has
 added a `path` attribute to the `File` interface which exposes the file's real
 path on filesystem.
 
-Example on getting a real path from a dragged-onto-the-app file:
+Example of getting a real path from a dragged-onto-the-app file:
 
 ```html
 <div id="holder">
@@ -15,18 +15,17 @@ Example on getting a real path from a dragged-onto-the-app file:
 </div>
 
 <script>
-  const holder = document.getElementById('holder');
-  holder.ondragover = () => {
-    return false;
-  };
-  holder.ondragleave = holder.ondragend = () => {
-    return false;
-  };
-  holder.ondrop = (e) => {
+  document.addEventListener('drop', (e) => {
     e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    console.log('File you dragged here is', file.path);
-    return false;
-  };
+    e.stopPropagation();
+
+    for (const f of e.dataTransfer.files) {
+      console.log('File(s) you dragged here: ', f.path)
+    }
+  });
+  document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
 </script>
 ```

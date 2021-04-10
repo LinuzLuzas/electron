@@ -1,7 +1,13 @@
 setImmediate(function () {
   try {
-    console.log([typeof process, typeof setImmediate, typeof global].join(' '))
+    const types = {
+      process: typeof process,
+      setImmediate: typeof setImmediate,
+      global: typeof global,
+      Buffer: typeof Buffer
+    };
+    console.log(JSON.stringify(types));
   } catch (e) {
-    console.log(e.message)
+    console.log(e.message);
   }
-})
+});
